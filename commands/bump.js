@@ -1,13 +1,13 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const fs = require('fs').promises;
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('bump')
-    .setDescription('Włącz lub wyłącz przypomnienia o bumpie')
+    .setDescription('Zarządzanie przypomnieniami bumpa')
     .addStringOption(opt =>
       opt.setName('toggle')
-        .setDescription('on = włącz, off = wyłącz')
+        .setDescription('Włącz lub wyłącz przypomnienia')
         .setRequired(true)
         .addChoices(
           { name: 'on', value: 'on' },
@@ -16,20 +16,19 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.reply({ content: '❌ Tylko administrator może to ustawić.', ephemeral: true });
+    if (!interaction.member.permissions.has('Administrator')) {
+      return interaction.reply({
+        content: '❌ Tylko administrator może tym zarządzać.',
+        ephemeral: true
+      });
     }
 
-    const state = interaction.options.getString('toggle');
+    const value = interaction.options.getString('toggle');
+    await fs.writeFile('./bump.txt', value);
 
-    if (state === 'on') {
-      await fs.writeFile('./bump.txt', 'on');
-      return interaction.reply({ content: '🔔 Przypomnienia o bumpie **włączone**.', ephemeral: true });
-    }
-
-    if (state === 'off') {
-      await fs.writeFile('./bump.txt', 'off');
-      return interaction.reply({ content: '🔕 Przypomnienia o bumpie **wyłączone**.', ephemeral: true });
-    }
+    interaction.reply({
+      content: `🔔 Przypomnienia bumpa są teraz: **${value.toUpperCase()}**`,
+      ephemeral: true
+    });
   }
 };
