@@ -75,3 +75,4 @@ global.client = client;
 
 // Reminder (Disboard bump)
 require('./reminder.js');
+console.log(JSON.stringify(client.commands.map(cmd => cmd.data.toJSON()), null, 2));
