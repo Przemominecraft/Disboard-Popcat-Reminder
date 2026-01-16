@@ -1,6 +1,9 @@
 // Last update: 16/01/2026
 // Made by 777popcat777
+
 require('dotenv').config();
+const config = process.env;
+
 const { 
   Client, 
   Collection, 
@@ -19,9 +22,9 @@ const client = new Client({
   ]
 });
 
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+const rest = new REST({ version: '10' }).setToken(config.TOKEN);
 
-// Załaduj komendy z folderu commands
+// ===== KOMENDY =====
 client.commands = new Collection();
 const commandFiles = fs.readdirSync('./commands').filter(f => f.endsWith('.js'));
 
@@ -30,43 +33,46 @@ for (const file of commandFiles) {
   client.commands.set(command.data.name, command);
 }
 
-// Rejestracja GLOBALNYCH komend
-(async () => {
+// ===== REJESTRACJA GLOBALNA =====
+client.once(Events.ClientReady, async () => {
+  console.log(`✅ Zalogowano jako ${client.user.tag}`);
+
   try {
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationCommands(config.CLIENT_ID),
       { body: client.commands.map(cmd => cmd.data.toJSON()) }
     );
     console.log('🌍 Globalne komendy zarejestrowane');
-  } catch (error) {
-    console.error('Błąd rejestracji komend:', error);
+
+    // JSON do top.gg
+    const json = client.commands.map(cmd => cmd.data.toJSON());
+    fs.writeFileSync('./slash-commands.json', JSON.stringify(json, null, 2));
+    console.log('📄 Wygenerowano plik slash-commands.json do top.gg');
+
+  } catch (err) {
+    console.error('❌ Błąd rejestracji:', err);
   }
-})();
+});
 
-// Obsługa slash komend
-client.on(Events.InteractionCreate, async interaction => {
+// ===== OBSŁUGA KOMEND =====
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+  const cmd = client.commands.get(interaction.commandName);
+  if (!cmd) return;
 
   try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error(err);
+    await cmd.execute(interaction);
+  } catch (e) {
+    console.error(e);
     if (!interaction.replied) {
       await interaction.reply({ content: '❌ Błąd komendy', ephemeral: true });
     }
   }
 });
 
-// Reminder
+// ===== REMINDER =====
 global.client = client;
 require('./reminder.js');
 
-// Start
-client.once(Events.ClientReady, () => {
-  console.log(`✅ Zalogowano jako ${client.user.tag}`);
-});
-
-client.login(process.env.TOKEN);
+// ===== LOGIN =====
+client.login(config.TOKEN);
