@@ -1,4 +1,4 @@
-// Last update: 15/01/2026
+// Last update: 16/01/2026
 // Made by 777popcat777
 require('dotenv').config();
 const config = process.env;
@@ -20,13 +20,19 @@ const embed = new EmbedBuilder()
 // Nasłuchiwanie wiadomości Disboarda
 client.on(Events.MessageCreate, async (msg) => {
     try {
+        if (!msg.guild) return; // ignoruj DM
         if (msg.author.id !== config.DISBOARD_ID) return;
-        if (!msg.embeds[0]?.description) return;
-        if (!msg.embeds[0].description.includes('Podbito serwer!')) return;
+        if (!msg.embeds.length) return;
+        if (!msg.embeds[0].description?.includes('Podbito serwer!')) return;
 
         // Sprawdź czy przypomnienia są włączone
-        const state = await fs.readFile('./bump.txt', 'utf-8').catch(() => 'on');
-        if (state.trim() !== 'on') return;
+        let state = 'on';
+        try {
+            state = (await fs.readFile('./bump.txt', 'utf-8')).trim();
+        } catch {
+            await fs.writeFile('./bump.txt', 'on'); // domyślnie włączone
+        }
+        if (state !== 'on') return;
 
         // Wczytaj kanał
         const channelId = await fs.readFile('./kanal.txt', 'utf-8');
